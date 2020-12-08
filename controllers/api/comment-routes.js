@@ -11,8 +11,8 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  if(req.session){
-    // expects => {comment_text: "This is the comment", user_id: 1, post_id: 2}
+  // expects => {comment_text: "This is the comment", user_id: 1, post_id: 2}
+  if (req.session) {
     Comment.create({
       comment_text: req.body.comment_text,
       user_id: req.session.user_id,
@@ -27,22 +27,24 @@ router.post('/', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  Comment.destroy({
-    where: {
-      id: req.params.id
-    }
-  })
-    .then(dbCommentData => {
-      if (!dbCommentData) {
-        res.status(404).json({ message: 'No comment found with this id!' });
-        return;
+  if (req.session) {
+    Comment.destroy({
+      where: {
+        id: req.params.id
       }
-      res.json(dbCommentData);
     })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json(err);
-    });
+      .then(dbCommentData => {
+        if (!dbCommentData) {
+          res.status(404).json({ message: 'No comment found with this id!' });
+          return;
+        }
+        res.json(dbCommentData);
+      })
+      .catch(err => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  }
 });
 
 module.exports = router;

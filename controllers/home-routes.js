@@ -1,5 +1,4 @@
 const router = require('express').Router();
-const session = require('express-session');
 const sequelize = require('../config/connection');
 const { Post, User, Comment, Vote } = require('../models');
 
@@ -32,7 +31,7 @@ router.get('/', (req, res) => {
     .then(dbPostData => {
       const posts = dbPostData.map(post => post.get({ plain: true }));
 
-      res.render('homepage', { 
+      res.render('homepage', {
         posts,
         loggedIn: req.session.loggedIn
       });
@@ -43,20 +42,7 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/', (req, res) => {
-  console.log(req.session);
-
-});
-
-router.get('/login', (req, res) => {
-  if(req.session.loggedIn) {
-    res.redirect('/');
-    return;
-  }
-
-  res.render('login');
-});
-
+// get single post
 router.get('/post/:id', (req, res) => {
   Post.findOne({
     where: {
@@ -67,7 +53,7 @@ router.get('/post/:id', (req, res) => {
       'post_url',
       'title',
       'created_at',
-      [sequelize.literal('(SELECT COUNT(*)FROM vote WHERE post.id = vote.post_id)'), 'vote_count']
+      [sequelize.literal('(SELECT COUNT(*) FROM vote WHERE post.id = vote.post_id)'), 'vote_count']
     ],
     include: [
       {
@@ -84,20 +70,32 @@ router.get('/post/:id', (req, res) => {
       }
     ]
   })
-  .then(dbPostData => {
-    if(!dbPostData) {
-      res.status(404).json({ message: 'No post with this id' });
-      return;
-    }
-    const post = dbPostData.get({ plain: true });
-    res.render('single-post', {
-      post,
-      loggedIn: req.session.loggedIn
+    .then(dbPostData => {
+      if (!dbPostData) {
+        res.status(404).json({ message: 'No post found with this id' });
+        return;
+      }
+
+      const post = dbPostData.get({ plain: true });
+
+      res.render('single-post', {
+        post,
+        loggedIn: req.session.loggedIn
+      });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
     });
-  })
-  .catch(err => {
-    console.log(err);
-    res.status(500).json(err);
-  });
 });
+
+router.get('/login', (req, res) => {
+  if (req.session.loggedIn) {
+    res.redirect('/');
+    return;
+  }
+
+  res.render('login');
+});
+
 module.exports = router;
